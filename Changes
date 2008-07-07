@@ -1,0 +1,22 @@
+Changes
+=======
+
+0.00005 - 07 Jul 2008
+  - Fix up things so the tests pass
+  - Update bunch of tests
+
+0.00004 - 25 Jun 2008
+  - Complete refactor
+  - Never released
+
+0.00003 - 22 May 2008
+  - Use retry queue to queue back throttled messages
+  - Never released
+
+0.00002 - 05 May 2008
+  - Updated to work with hipri queues
+  - Never released
+
+0.00001 - 01 May 2008
+  - First commit
+  - Never released

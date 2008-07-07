@@ -1,0 +1,123 @@
+# $Id$
+
+package Mvalve::QueueSet;
+use Moose;
+
+has 'emergency_queues' => (
+    is => 'rw',
+    isa => 'ArrayRef[HashRef]',
+    auto_deref => 1,
+    default => sub {
+        +[
+            { 
+                table => 'q_emerg'
+            },
+        ]
+    }
+);
+
+has 'retry_queues' => (
+    is => 'rw',
+    isa => 'ArrayRef[HashRef]',
+    auto_deref => 1,
+    default => sub {
+        +[
+            {
+                table => 'q_retry'
+            },
+        ]
+    }
+);
+
+has 'retry_wait_queues' => (
+    is => 'rw',
+    isa => 'ArrayRef[HashRef]',
+    auto_deref => 1,
+    default => sub {
+        +[
+            {
+                table => 'q_retry_wait'
+            },
+        ]
+    }
+);
+
+has 'hipri_queues' => (
+    is => 'rw',
+    isa => 'ArrayRef[HashRef]',
+    auto_deref => 1,
+    default => sub { +[] }
+);
+
+has 'normal_queues' => (
+    is => 'rw',
+    isa => 'ArrayRef[HashRef]',
+    auto_deref => 1,
+    default => sub {
+        +[
+            {
+                table => 'q_incoming'
+            },
+        ]
+    },
+);
+
+__PACKAGE__->meta->make_immutable;
+
+no Moose;
+
+# Retry queue is not counted, as it's special
+sub all_queues
+{
+    my $self = shift;
+
+    my @list = (
+        $self->emergency_queues,
+        $self->retry_queues,
+        $self->hipri_queues,
+        $self->normal_queues,
+    );
+    return wantarray ? @list : \@list;
+}
+
+sub all_tables { map { $_->{table} } ($_[0]->all_queues, $_[0]->retry_wait_queues) }
+
+sub choose_table {
+    my ($self, $type) = @_;
+    $type ||= 'normal';
+
+    my $method = join('_', $type, 'queues');
+    my @queues = $self->$method;
+
+    return $queues[ rand(@queues) ]->{table};
+}
+
+sub as_q4m_args
+{
+    my $self = shift;
+    return map { $_->{table} } $self->all_queues;
+}
+
+sub is_emergency
+{
+    my ($self, $table) = @_;
+    foreach my $q ($self->emergency_queues) {
+        if ($q->{table} eq $table) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+sub is_retry
+{
+    my ($self, $table) = @_;
+    foreach my $q ($self->retry_queues) {
+        if ($q->{table} eq $table) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+1;
