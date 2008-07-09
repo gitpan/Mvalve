@@ -70,3 +70,44 @@ sub clear { shift->q4m->clear(@_) }
 
 
 1;
+
+__END__
+
+=head1 NAME 
+
+Mvalve::Queue::Q4M - Q4M Implementation
+
+=head1 SYNOPSIS
+
+  use Mvalve::Queue::Q4M;
+
+  my $q = Mvalve::Queue::Q4M->new( connect_info => [ ... ] );
+
+  $q->next(
+    table_conds => [ ... ],
+    timeout => ...
+  );
+
+  $q->fetch(
+    table => ...,
+    args => { ... }
+  );
+
+  $q->insert(
+    table => ...,
+    data => { ... },
+  );
+
+  $q->clear();
+
+=head1 METHODS
+
+=head2 next
+
+=head2 fetch
+
+=head2 insert
+
+=head2 clear
+
+=cut

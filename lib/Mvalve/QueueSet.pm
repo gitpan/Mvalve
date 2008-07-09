@@ -16,37 +16,17 @@ has 'emergency_queues' => (
     }
 );
 
-has 'retry_queues' => (
+has 'timed_queues' => (
     is => 'rw',
     isa => 'ArrayRef[HashRef]',
     auto_deref => 1,
     default => sub {
         +[
             {
-                table => 'q_retry'
+                table => 'q_timed'
             },
         ]
     }
-);
-
-has 'retry_wait_queues' => (
-    is => 'rw',
-    isa => 'ArrayRef[HashRef]',
-    auto_deref => 1,
-    default => sub {
-        +[
-            {
-                table => 'q_retry_wait'
-            },
-        ]
-    }
-);
-
-has 'hipri_queues' => (
-    is => 'rw',
-    isa => 'ArrayRef[HashRef]',
-    auto_deref => 1,
-    default => sub { +[] }
 );
 
 has 'normal_queues' => (
@@ -73,14 +53,13 @@ sub all_queues
 
     my @list = (
         $self->emergency_queues,
-        $self->retry_queues,
-        $self->hipri_queues,
+        $self->timed_queues,
         $self->normal_queues,
     );
     return wantarray ? @list : \@list;
 }
 
-sub all_tables { map { $_->{table} } ($_[0]->all_queues, $_[0]->retry_wait_queues) }
+sub all_tables { map { $_->{table} } ($_[0]->all_queues) }
 
 sub choose_table {
     my ($self, $type) = @_;
@@ -95,7 +74,14 @@ sub choose_table {
 sub as_q4m_args
 {
     my $self = shift;
-    return map { $_->{table} } $self->all_queues;
+    my $now = time();
+    my @list = (
+        (map { $_->{table} } $self->emergency_queues),
+        (map { "$_->{table}:ready<" . $now } $self->timed_queues),
+        (map { $_->{table} } $self->normal_queues),
+    );
+
+    return wantarray ? @list : \@list;
 }
 
 sub is_emergency
@@ -109,10 +95,10 @@ sub is_emergency
     return 0;
 }
 
-sub is_retry
+sub is_timed
 {
     my ($self, $table) = @_;
-    foreach my $q ($self->retry_queues) {
+    foreach my $q ($self->timed_queues) {
         if ($q->{table} eq $table) {
             return 1;
         }

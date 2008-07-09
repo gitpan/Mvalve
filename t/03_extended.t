@@ -15,7 +15,7 @@ BEGIN
     }
 
     $ENV{MEMCACHED_SERVERS} ||= '127.0.0.1:11211';
-    $ENV{MEMCAHCED_NAMESPACE} ||= join('_', __FILE__, $$, {}, rand());
+    $ENV{MEMCACHED_NAMESPACE} ||= join('_', __FILE__, $$, {}, rand());
     $ENV{MEMCACHED_SERVERS} = [
         split(/\s*,\s*/, $ENV{MEMCACHED_SERVERS}) ];
 
@@ -23,7 +23,7 @@ BEGIN
 }
 
 can_ok( "Mvalve" => qw(
-    next fallback next_retry retry
+    next defer
 ) );
 
 {
@@ -40,7 +40,7 @@ can_ok( "Mvalve" => qw(
         throttler => {
             module    => 'Data::Throttler::Memcached',
             max_items => 1,
-            interval  => 10,
+            interval  => 2,
             cache     => {
                 data => $ENV{MEMCACHED_SERVERS},
                 namespace => $ENV{MEMCACHED_NAMESPACE},
@@ -74,7 +74,9 @@ can_ok( "Mvalve" => qw(
     {
         my $message = $mvalve->next;
         ok( $message, 'first message should not be throttled' );
-        delete $messages{ $message->id };
+        if ($message) {
+            delete $messages{ $message->id };
+        }
 
         $count--;
         for my $i (1..$count) {
@@ -88,10 +90,8 @@ can_ok( "Mvalve" => qw(
     {
         my $i = 0;
         while ($i < $count) {
-            my $rv = $mvalve->next_retry;
             my $message = $mvalve->next;
-
-            next unless $rv;
+            next unless $message;
 
             ok( delete $messages{ $message->id }, "Deleting a proper (unhandled) message");
             $i++;

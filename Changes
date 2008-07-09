@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.00006 - 09 Jul 2008
+  - q_retry is no longer needed, and hence q_retry_wait
+    q_timed is used now.
+  - next_retry() insert_retry() are no longer needed.
+  - Fix tests
+  - Require new Queue::Q4M for speed
+
 0.00005 - 07 Jul 2008
   - Fix up things so the tests pass
   - Update bunch of tests

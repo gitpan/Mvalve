@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 8;
+use Test::More tests => 12;
 
 BEGIN
 {
@@ -10,18 +10,24 @@ can_ok( "Mvalve::QueueSet" => qw(
     all_queues as_q4m_args
 ) );
 
+my $queues = Mvalve::QueueSet->new;
 {
-    my $queues = Mvalve::QueueSet->new;
-
     ok( $queues );
     isa_ok( $queues, "Mvalve::QueueSet" );
+}
 
-    my( @all_queues ) = $queues->all_queues;
-    is( @all_queues , 3 );
+{
+    my( @queues ) = $queues->all_queues;
+    is( @queues , 3 );
+    is( (shift @queues)->{table}, 'q_emerg' );
+    is( (shift @queues)->{table}, 'q_timed' );
+    is( (shift @queues)->{table}, 'q_incoming' );
+}
 
-    my( @args ) = $queues->as_q4m_args;
-
-    is( shift @args, 'q_emerg' );
-    is( shift @args, 'q_retry' );
-    is( shift @args, 'q_incoming' );
+{
+    my( @queues ) = $queues->as_q4m_args;
+    is( @queues, 3 );
+    is( shift @queues, 'q_emerg' );
+    like( shift @queues, qr/q_timed:ready<\d+/ );
+    is( shift @queues, 'q_incoming' );
 }

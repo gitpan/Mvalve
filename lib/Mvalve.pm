@@ -6,7 +6,7 @@ use Moose::Util::TypeConstraints;
 use Mvalve::Message;
 use Time::HiRes();
 
-our $VERSION   = '0.00005';
+our $VERSION   = '0.00006';
 our $AUTHORITY = "cpan:DMAKI";
 
 class_type 'Data::Throttler';
@@ -77,13 +77,6 @@ has 'state' => (
     }
 );
 
-has 'interval' => (
-    is => 'rw',
-    isa => 'Int',
-    required => 1,
-    default => 10
-);
-
 has 'timeout' => (
     is => 'rw',
     isa => 'Int',
@@ -144,24 +137,24 @@ sub next
     # is *not* a
     my $destination = $message->header( DESTINATION_HEADER );
 
-    if ( $qs->is_emergency( $table ) ||  $qs->is_retry( $table ) ) {
-        # if this is from an emergency queue or a retry queue, we go ahead
+    if ( $qs->is_emergency( $table ) ||  $qs->is_timed( $table ) ) {
+        # if this is from an emergency queue or a timed queue, we go ahead
         # and allow the message, but we also update the throttler's count
         # so the next message from a normal queue would be throttled correctly
+        if ($message->header(RETRY_HEADER)) {
+            $self->state_decr( [ $destination, 'retry' ] );
+        }
         $self->try_push( key => $destination );
 
         return $message;
     }
 
-
     # otherwise, we need to check if this message is going to be throttled
-    trace( "checking if message to $destination should be throttled" ) if MVALVE_TRACE;
-    my $is_throttled =
-        $self->is_pending( $destination ) ||
-        ! $self->try_push( key => $destination )
-    ;
+    my $is_pending   = $self->is_pending( $destination );
+    my $is_throttled = ! $self->try_push( key => $destination );
+    trace( "checking if message to $destination should be throttled (pending: $is_pending, throttled: $is_throttled)" ) if MVALVE_TRACE;
 
-    if ($is_throttled) {
+    if ($is_throttled || $is_pending) {
         trace( "message", $message->id, "is being throttled") if MVALVE_TRACE;
         $self->defer( $message );
         return (); # no data for you!
@@ -170,27 +163,6 @@ sub next
     # if we got here, we can just return the data
     trace( "message", $message->id, "being returned") if MVALVE_TRACE;
     return $message;
-}
-
-sub next_retry
-{
-    my $self = shift;
-
-    my $time = Time::HiRes::time();
-    my $retry_table = $self->queue_set->choose_table('retry_wait');
-    my $cond = sprintf( "%s:retry<=%d", $retry_table, $time );
-
-    trace( "next_retry() for table $retry_table, where retry time is <= $time ($cond)" ) if MVALVE_TRACE;
-
-    my $table = $self->q_next(table_conds => [ $cond ], timeout => $self->timeout);
-    if (! $table) {
-        trace( "next_retry() did not return anything" ) if MVALVE_TRACE;
-        Time::HiRes::usleep(100);
-        return ();
-    }
-
-    my $message = $self->q_fetch( table => $table );
-    $self->insert_retry( $message );
 }
 
 sub defer
@@ -202,8 +174,8 @@ sub defer
     }
 
     my $qs          = $self->queue_set;
-    my $interval    = $self->interval;
-    my $table       = $qs->choose_table('retry_wait');
+    my $interval    = $self->throttler->{db}->{chain}->{interval};
+    my $table       = $qs->choose_table('timed');
     my $destination = $message->header( DESTINATION_HEADER );
     my $time_key    = [ $table, $destination, 'retry time' ];
     my $retry_key   = [ $destination, 'retry' ];
@@ -221,7 +193,7 @@ sub defer
         table => $table,
         data => {
             destination => $destination,
-            retry       => $retry,
+            ready       => $retry,
             message     => $message->serialize,
         }
     );
@@ -264,40 +236,10 @@ sub insert {
     );
 }
 
-sub insert_retry
-{
-    my( $self, $message ) = @_;
-
-    if ( ! blessed($message) || ! $message->isa( 'Mvalve::Message' ) ) {
-        return () ;
-    }
-
-    my $table = $self->queue_set->choose_table('retry');
-    my $channel_id = $message->header( DESTINATION_HEADER );
-
-    my $rv = $self->q_insert(
-        table => $table, 
-        data => {
-            destination => $message->header( DESTINATION_HEADER ),
-            message => $message->serialize(),
-        }
-    );
-
-    if ($rv) {
-        my $retry_key = [ $channel_id, 'retry' ];
-        my $count = $self->state_decr($retry_key) || 0;
-        if ( $count < 0 ) {
-            $self->state_set($retry_key, 0);
-        }
-    }
-
-    return $rv;
-}
-
 sub is_pending {
-    my( $self, $channel_id ) = @_;
+    my( $self, $destination ) = @_;
 
-    my $retry_key = [ $channel_id, 'retry' ];
+    my $retry_key = [ $destination, 'retry' ];
     my $count = $self->state_get($retry_key);
     return $count ? 1 : 0;
 }
@@ -319,6 +261,13 @@ Mvalve - Generic Q4M Powered Message Pipe
 =head1 SYNOPSIS
 
   my $mvalve = Mvalve->new(
+    state => {
+      module => "...",
+    },
+    queue => {
+      module => "...",
+      connect_info => [ ... ]
+    },
     throttler => {
       module => 'Data::Throttler::Memcached',
       max_items => $max,
@@ -330,11 +279,16 @@ Mvalve - Generic Q4M Powered Message Pipe
   );
 
   while ( 1 ) {
-    my $message = $throttler->next;
+    my $message = $mvalve->next;
     if ($message) {
       # do whatever
     }
   }
+
+=head1 DESCRIPTION
+
+Mvalve stands for "Messave Valve". It is a frontend for Q4M powered set of
+queues, acting as a single pipe.
 
 =head1 METHODS
 
@@ -345,15 +299,6 @@ Fetches the next available message.
 =head2 insert 
 
 Inserts into the normal queue
-
-=head2 next_retry
-
-Fetches the next message waiting to be requeued in retry_wait queue 
-to the retry queue.
-
-=head2 insert_retry
-
-Inserts into the retry queue, noting the next fetch time.
 
 =head2 defer
 
@@ -410,6 +355,13 @@ This is for debugging only
 Daisuke Maki C<< <daisuke@endeworks.jp> >>
 
 Taro Funaki C<< <t@33rpm.jp> >>
+
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+See http://www.perl.com/perl/misc/Artistic.html
 
 =cut
 

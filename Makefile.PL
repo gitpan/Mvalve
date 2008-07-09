@@ -11,7 +11,7 @@ requires('Digest::SHA1');
 requires('HTTP::Headers');
 requires('Moose');
 requires('MooseX::ClassAttribute');
-requires('Queue::Q4M', 0.00006);
+requires('Queue::Q4M', '0.00009');
 requires('UNIVERSAL::require');
 
 recommends('Data::Throttler::Memcached');

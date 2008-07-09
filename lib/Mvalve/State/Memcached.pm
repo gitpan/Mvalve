@@ -69,7 +69,7 @@ around qw(get set remove incr decr) => sub {
         local $Data::Dumper::Indent   = 1;
         local $Data::Dumper::Terse    = 1;
         local $Data::Dumper::Sortkeys = 1;
-        $key = Digest::SHA1::sha1_hex($key);
+        $key = Digest::SHA1::sha1_hex(Data::Dumper::Dumper($key));
     }
     $next->($self, $key, @args);
 };
@@ -79,3 +79,15 @@ with 'Mvalve::State';
 no Moose;
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mvalve::State::Memcached - Memcached Implementation Of Mvalve::State
+
+=head1 SYNOPSIS
+
+  use Mvalve:
+
+=cut
