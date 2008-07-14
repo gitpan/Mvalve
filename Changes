@@ -1,6 +1,13 @@
 Changes
 =======
 
+0.00007
+  - Change the nested constructor specification. Everything now must
+    be eplicitly stated as { module => "...", args => { } }
+  - Slightly refactor the coersion/default methods
+  - Fix t/00_compile.t to actually skip the test if Test::Compile
+    was not found in the system
+
 0.00006 - 09 Jul 2008
   - q_retry is no longer needed, and hence q_retry_wait
     q_timed is used now.

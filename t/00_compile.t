@@ -1,10 +1,8 @@
-
+use strict;
 use Test::More;
-BEGIN
-{
-    eval { require Test::Compile; Test::Compile->import };
-    if ($@) {
-        skip_all( "Test::Compile required for testing compilation: $@");
-    }
+eval { require Test::Compile; Test::Compile->import };
+if ($@) {
+    plan(skip_all => "Test::Compile required for testing compilation: $@");
+} else {
+    Test::Compile::all_pm_files_ok();
 }
-Test::Compile::all_pm_files_ok();

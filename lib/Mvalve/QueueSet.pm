@@ -74,7 +74,7 @@ sub choose_table {
 sub as_q4m_args
 {
     my $self = shift;
-    my $now = time();
+    my $now = time() * 1000;
     my @list = (
         (map { $_->{table} } $self->emergency_queues),
         (map { "$_->{table}:ready<" . $now } $self->timed_queues),
@@ -107,3 +107,25 @@ sub is_timed
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mvalve::QueueSet - QueueSet
+
+=head1 METHODS
+
+=head2 all_queues
+
+=head2 all_tables
+
+=head2 as_q4m_args
+
+=head2 is_emergency
+
+=head2 is_timed
+
+=head2 choose_table
+
+=cut

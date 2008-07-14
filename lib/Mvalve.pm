@@ -4,78 +4,90 @@ package Mvalve;
 use Moose;
 use Moose::Util::TypeConstraints;
 use Mvalve::Message;
+use Mvalve::Throttler;
 use Time::HiRes();
 
-our $VERSION   = '0.00006';
+our $VERSION   = '0.00007';
 our $AUTHORITY = "cpan:DMAKI";
 
-class_type 'Data::Throttler';
 role_type 'Mvalve::Queue';
 role_type 'Mvalve::State';
 
-coerce 'Data::Throttler'
-    => from 'HashRef'
-        => via {
+{
+    my $coerce = sub {
+        my $default_class = shift;
+        my $prefix = shift;
+        return sub {
             my $h = $_;
-            my $module = delete $h->{module} || 'Data::Throttler';
+            my $module = delete $h->{module} || $default_class;
+            if ($prefix && $module !~ s/^\+//) {
+                $module = join('::', $prefix, $module);
+            }
             Class::MOP::load_class($module);
 
-            $module->new(%$h);
-        }
-;
+            $module->new(%{$h->{args}});
+        };
+    };
 
-coerce 'Mvalve::Queue'
-    => from 'HashRef'
-        => via {
-            my $h = $_;
-            my $module = delete $h->{module} || 'Mvalve::Queue::Q4M';
-            Class::MOP::load_class($module);
+    coerce 'Mvalve::Throttler'
+        => from 'HashRef'
+        => $coerce->('Data::Valve', 'Mvalve::Throttler'), # XXX - no need to use via () here
+    ;
 
-            $module->new(%$h);
-        }
-;
+    coerce 'Mvalve::Queue'
+        => from 'HashRef'
+        => $coerce->('Q4M', 'Mvalve::Queue'), # XXX - no need to use via () here
+    ;
+}
 
 coerce 'Mvalve::State'
     => from 'HashRef'
         => via {
             my $h = $_;
-            my $module = delete $h->{module} || 'Mvalve::State::Memory';
+            my $module = delete $h->{module} || 'Memory';
+            if ($module !~ s/^\+//) {
+                $module = "Mvalve::State::$module";
+            }
             Class::MOP::load_class($module);
 
-            $module->new(memcached => $h);
+            $module->new(%{$h->{args}});
         }
 ;
 
 has 'throttler' => (
     is       => 'rw',
-    isa      => 'Data::Throttler',
+    does     => 'Mvalve::Throttler',
     required => 1,
     coerce   => 1,
     handles  => [ qw(try_push) ],
 );
 
-has 'queue_set' => (
-    is  => 'ro',
-    isa => 'Mvalve::QueueSet',
-    default => sub {
-        Class::MOP::load_class('Mvalve::QueueSet');
-        Mvalve::QueueSet->new;
-    }
-);
+{
+    my $default = sub {
+        my $class = shift;
+        return sub {
+            Class::MOP::load_class($class);
+            $class->new;
+        };
+    };
 
-has 'state' => (
-    is => 'rw',
-    does => 'Mvalve::State',
-    coerce => 1,
-    required => 1,
-    default => sub { 
-        Class::MOP::load_class('Mvalve::State::Memory');
-        Mvalve::State::Memory->new
-    },
-    handles => {
-        map { ("state_$_" => $_) } qw(get set remove incr decr)
-    }
-);
+    has 'queue_set' => (
+        is  => 'ro',
+        isa => 'Mvalve::QueueSet',
+        default => $default->( 'Mvalve::QueueSet' )
+    );
+
+    has 'state' => (
+        is => 'rw',
+        does => 'Mvalve::State',
+        coerce => 1,
+        required => 1,
+        default => $default->( 'Mvalve::State::Memory' ),
+        handles => {
+            map { ("state_$_" => $_) } qw(get set remove incr decr)
+        }
+    );
+}
 
 has 'timeout' => (
     is => 'rw',
@@ -99,15 +111,14 @@ __PACKAGE__->meta->make_immutable;
 
 no Moose;
 
+# some special headers
 use constant EMERGENCY_HEADER   => 'X-Mvalve-Emergency';
 use constant DESTINATION_HEADER => 'X-Mvalve-Destination';
 use constant RETRY_HEADER       => 'X-Mvalve-Retry-Time';
+use constant DURATION_HEADER    => 'X-Mvalve-Duration';
 use constant MVALVE_TRACE       => $ENV{MVALVE_TRACE} ? 1 : 0;
 
-sub trace
-{
-    print STDERR "MVALVE: @_\n";
-}
+sub trace { print STDERR "MVALVE: @_\n" }
 
 sub next
 {
@@ -174,7 +185,7 @@ sub defer
     }
 
     my $qs          = $self->queue_set;
-    my $interval    = $self->throttler->{db}->{chain}->{interval};
+    my $interval    = $self->throttler->interval;
     my $table       = $qs->choose_table('timed');
     my $destination = $message->header( DESTINATION_HEADER );
     my $time_key    = [ $table, $destination, 'retry time' ];
@@ -193,7 +204,7 @@ sub defer
         table => $table,
         data => {
             destination => $destination,
-            ready       => $retry,
+            ready       => int($retry * 1000),
             message     => $message->serialize,
         }
     );
@@ -202,8 +213,7 @@ sub defer
 
     if ($rv) {
         # duration specifies t
-        $retry += $message->header('x-wfg-duration') ||
-                  $interval;
+        $retry += $message->header( DURATION_HEADER ) || $interval;
         $self->state_set($time_key, $retry);
         $self->state_incr($retry_key);
     }
@@ -252,6 +262,8 @@ sub clear_all {
     }
 }
 
+1;
+
 __END__
 
 =head1 NAME
@@ -269,11 +281,13 @@ Mvalve - Generic Q4M Powered Message Pipe
       connect_info => [ ... ]
     },
     throttler => {
-      module => 'Data::Throttler::Memcached',
-      max_items => $max,
-      interval  => $interval,
-      cache     => {
-        data => [ ... ]
+      module => 'Data::Valve',
+      args => {
+        max_items => $max,
+        interval  => $interval,
+        cache     => {
+          data => [ ... ]
+        }
       }
     }
   );
@@ -290,6 +304,37 @@ Mvalve - Generic Q4M Powered Message Pipe
 Mvalve stands for "Messave Valve". It is a frontend for Q4M powered set of
 queues, acting as a single pipe.
 
+=head1 SETUP
+
+You need to have installed mysql 5.1 or later and q4m. You can grab
+them at:
+
+  http://dev.mysql.com/
+  http://q4m.31tools.com/
+
+Once you have a q4m-enabled mysql running, you need to create these q4m 
+enabled tables in your mysql database.
+
+  CREATE TABLE q_emerg (
+     destination VARCHAR(40) NOT NULL,
+     message     BLOB NOT NULL
+  ) ENGINE=QUEUE DEFAULT CHARSET=UTF-8
+ 
+  CREATE TABLE q_timed (
+     destination VARCHAR(40) NOT NULL,
+     ready       BIGINT NOT NULL,
+     message     BLOB NOT NULL
+  ) ENGINE=QUEUE DEFAULT CHARSET=UTF-8
+ 
+  CREATE TABLE q_incoming (
+     destination VARCHAR(40) NOT NULL,
+     message     BLOB NOT NULL
+  ) ENGINE=QUEUE DEFAULT CHARSET=UTF-8
+
+You also need to setup a memcached compatible distributed cache/storage.
+This will be used to share certain key data across multiple instances
+of Mvalve.
+ 
 =head1 METHODS
 
 =head2 next
@@ -349,6 +394,8 @@ This is for debugging only
 =head2 MVALVE_TRACE
 
 =head2 RETRY_HEADER
+
+=head2 DURATION_HEADER
 
 =head1 AUTHORS
 

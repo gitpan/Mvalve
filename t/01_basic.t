@@ -15,16 +15,20 @@ BEGIN
 {
     my $mv = Mvalve->new(
         throttler => {
-            max_items => 10,
-            interval  => 20
+            args => {
+                max_items => 10,
+                interval  => 20
+            }
         },
         queue => {
-            connect_info => [ 
-                $ENV{MVALVE_Q4M_DSN},
-                $ENV{MVALVE_Q4M_USERNAME},
-                $ENV{MVALVE_Q4M_PASSWORD},
-                { RaiseError => 1, AutoCommit => 1 },
-            ]
+            args => {
+                connect_info => [ 
+                    $ENV{MVALVE_Q4M_DSN},
+                    $ENV{MVALVE_Q4M_USERNAME},
+                    $ENV{MVALVE_Q4M_PASSWORD},
+                    { RaiseError => 1, AutoCommit => 1 },
+                ]
+            }
         }
     );
     ok( $mv );

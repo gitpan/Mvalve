@@ -21,3 +21,23 @@ sub incr { shift->data->{$_[0]}++ }
 sub decr { shift->data->{$_[0]}-- }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mvalve::State::Memory - Keeps Mvalve State In Memory (For Debug)
+
+=head1 METHODS
+
+=head2 get
+
+=head2 set 
+
+=head2 remove
+
+=head2 incr
+
+=head2 decr
+
+=cut

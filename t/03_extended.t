@@ -30,26 +30,30 @@ can_ok( "Mvalve" => qw(
     my $mvalve = Mvalve->new(
         timeout   => 1,
         queue => {
-            connect_info => [ 
-                $ENV{MVALVE_Q4M_DSN},
-                $ENV{MVALVE_Q4M_USERNAME},
-                $ENV{MVALVE_Q4M_PASSWORD},
-                { RaiseError => 1, AutoCommit => 1 },
-            ]
+            args => {
+                connect_info => [ 
+                    $ENV{MVALVE_Q4M_DSN},
+                    $ENV{MVALVE_Q4M_USERNAME},
+                    $ENV{MVALVE_Q4M_PASSWORD},
+                    { RaiseError => 1, AutoCommit => 1 },
+                ]
+            }
         },
         throttler => {
-            module    => 'Data::Throttler::Memcached',
-            max_items => 1,
-            interval  => 2,
-            cache     => {
-                data => $ENV{MEMCACHED_SERVERS},
-                namespace => $ENV{MEMCACHED_NAMESPACE},
-            },
+            module    => 'Data::Valve',
+            args => {
+                max_items => 1,
+                interval  => 1.4,
+            }
         },
         state => {
-            module => 'Mvalve::State::Memcached',
-            servers => $ENV{MEMCACHED_SERVERS},
-            namespace => $ENV{MEMCACHED_NAMESPACE},
+            module => 'Memcached',
+            args   => {
+                memcached => {
+                    servers => $ENV{MEMCACHED_SERVERS},
+                    namespace => $ENV{MEMCACHED_NAMESPACE},
+                }
+            }
         }
     );
     $mvalve->clear_all;

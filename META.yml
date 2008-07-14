@@ -16,16 +16,14 @@ no_index:
   directory:
     - inc
     - t
-recommends:
-  Data::Throttler::Memcached: 0
 requires:
   Cache::Memcached: 0
   Data::Serializer: 0
-  Data::Throttler: 0
+  Data::Valve: 0.00003
   Digest::SHA1: 0
   HTTP::Headers: 0
   Moose: 0
   MooseX::ClassAttribute: 0
   Queue::Q4M: 0.00009
   UNIVERSAL::require: 0
-version: 0.00006
+version: 0.00007
