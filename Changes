@@ -1,6 +1,11 @@
 Changes
 =======
 
+0.00009 - 15 Jul 2008
+  - Refactor common stuff to Mvalve::Base
+  - Fix how timed queue works
+  - Protect calls by using MooseX::KeyedMutex
+
 0.00008 - 15 Jul 2008
   - Split Mvalve into Mvalve::Reader and Mvalve::Writer
 

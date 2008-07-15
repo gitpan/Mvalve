@@ -11,6 +11,7 @@ inc/Module/Install/WriteAll.pm
 inc/Test/Compile.pm
 inc/Test/More.pm
 lib/Mvalve.pm
+lib/Mvalve/Base.pm
 lib/Mvalve/Const.pm
 lib/Mvalve/Message.pm
 lib/Mvalve/Queue.pm
@@ -31,5 +32,6 @@ t/00_compile.t
 t/01_basic.t
 t/02_queue_set.t
 t/03_extended.t
+t/04_timed.t
 t/99-pod-coverage.t
 t/99-pod.t

@@ -25,6 +25,7 @@ requires:
   HTTP::Headers: 0
   Moose: 0
   MooseX::ClassAttribute: 0
+  MooseX::KeyedMutex: 0
   Queue::Q4M: 0.00009
   UNIVERSAL::require: 0
-version: 0.00008
+version: 0.00009

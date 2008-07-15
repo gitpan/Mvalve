@@ -7,6 +7,8 @@ use Moose::Util::TypeConstraints;
 use Data::Dumper ();
 use Digest::SHA1 ();
 
+with 'MooseX::KeyedMutex';
+
 subtype 'Memcached'
     => as 'Object'
         => where { 
@@ -71,6 +73,7 @@ around qw(get set remove incr decr) => sub {
         local $Data::Dumper::Sortkeys = 1;
         $key = Digest::SHA1::sha1_hex(Data::Dumper::Dumper($key));
     }
+
     $next->($self, $key, @args);
 };
 

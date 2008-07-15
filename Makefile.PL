@@ -12,6 +12,7 @@ requires('Exporter', '5.61');
 requires('HTTP::Headers');
 requires('Moose');
 requires('MooseX::ClassAttribute');
+requires('MooseX::KeyedMutex');
 requires('Queue::Q4M', '0.00009');
 requires('UNIVERSAL::require');
 
