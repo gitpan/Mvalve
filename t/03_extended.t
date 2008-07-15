@@ -11,7 +11,7 @@ BEGIN
         plan(skip_all => "Define MVALVE_Q4M_DSN to run this test");
     } else {
         $messages = $ENV{MVALVE_MESSAGE_COUNT} || 32;
-        plan(tests => 5 + 3 * $messages);
+        plan(tests => 3 + 3 * $messages);
     }
 
     $ENV{MEMCACHED_SERVERS} ||= '127.0.0.1:11211';
@@ -19,26 +19,25 @@ BEGIN
     $ENV{MEMCACHED_SERVERS} = [
         split(/\s*,\s*/, $ENV{MEMCACHED_SERVERS}) ];
 
-    use_ok("Mvalve");
+    use_ok("Mvalve::Reader");
+    use_ok("Mvalve::Writer");
 }
 
-can_ok( "Mvalve" => qw(
-    next defer
-) );
-
 {
-    my $mvalve = Mvalve->new(
+    my %q_config = (
+        args => {
+            connect_info => [ 
+                $ENV{MVALVE_Q4M_DSN},
+                $ENV{MVALVE_Q4M_USERNAME},
+                $ENV{MVALVE_Q4M_PASSWORD},
+                { RaiseError => 1, AutoCommit => 1 },
+            ]
+        }
+    );
+
+    my $writer = Mvalve::Writer->new( queue => \%q_config );
+    my $reader = Mvalve::Reader->new(
         timeout   => 1,
-        queue => {
-            args => {
-                connect_info => [ 
-                    $ENV{MVALVE_Q4M_DSN},
-                    $ENV{MVALVE_Q4M_USERNAME},
-                    $ENV{MVALVE_Q4M_PASSWORD},
-                    { RaiseError => 1, AutoCommit => 1 },
-                ]
-            }
-        },
         throttler => {
             module    => 'Data::Valve',
             args => {
@@ -54,12 +53,10 @@ can_ok( "Mvalve" => qw(
                     namespace => $ENV{MEMCACHED_NAMESPACE},
                 }
             }
-        }
+        },
+        queue => \%q_config
     );
-    $mvalve->clear_all;
-
-    ok( $mvalve );
-    isa_ok( $mvalve, "Mvalve" );
+    $reader->clear_all;
 
     my $count = $messages;
     diag( "Generating $count messages...." );
@@ -71,12 +68,12 @@ can_ok( "Mvalve" => qw(
             },
             content => $i,
         );
-        ok( $mvalve->insert( message => $message ), "insert data $i");
+        ok( $writer->insert( message => $message ), "insert data $i");
         $messages{ $message->id } = $message;
     }
 
     {
-        my $message = $mvalve->next;
+        my $message = $reader->next;
         ok( $message, 'first message should not be throttled' );
         if ($message) {
             delete $messages{ $message->id };
@@ -84,7 +81,7 @@ can_ok( "Mvalve" => qw(
 
         $count--;
         for my $i (1..$count) {
-            my $message = $mvalve->next;
+            my $message = $reader->next;
             ok( ! $message, "subsequent messages should be throttled" );
         }
     }
@@ -94,7 +91,7 @@ can_ok( "Mvalve" => qw(
     {
         my $i = 0;
         while ($i < $count) {
-            my $message = $mvalve->next;
+            my $message = $reader->next;
             next unless $message;
 
             ok( delete $messages{ $message->id }, "Deleting a proper (unhandled) message");

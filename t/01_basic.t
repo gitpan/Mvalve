@@ -6,33 +6,40 @@ BEGIN
     if (! $ENV{MVALVE_Q4M_DSN} ) {
         plan(skip_all => "Define MVALVE_Q4M_DSN to run this test");
     } else {
-        plan(tests => 4);
+        plan(tests => 8);
     }
 
-    use_ok( "Mvalve" );
+    use_ok( "Mvalve::Writer" );
+    use_ok( "Mvalve::Reader" );
 }
 
 {
-    my $mv = Mvalve->new(
+    my %q_config = (
+        args => {
+            connect_info => [ 
+                $ENV{MVALVE_Q4M_DSN},
+                $ENV{MVALVE_Q4M_USERNAME},
+                $ENV{MVALVE_Q4M_PASSWORD},
+                { RaiseError => 1, AutoCommit => 1 },
+            ]
+        }
+    );
+
+    my $writer = Mvalve::Writer->new(queue => \%q_config);
+    my $reader = Mvalve::Reader->new(
+        queue => \%q_config,
         throttler => {
             args => {
                 max_items => 10,
                 interval  => 20
             }
         },
-        queue => {
-            args => {
-                connect_info => [ 
-                    $ENV{MVALVE_Q4M_DSN},
-                    $ENV{MVALVE_Q4M_USERNAME},
-                    $ENV{MVALVE_Q4M_PASSWORD},
-                    { RaiseError => 1, AutoCommit => 1 },
-                ]
-            }
-        }
     );
-    ok( $mv );
-    isa_ok( $mv, 'Mvalve' );
+
+    ok( $writer, "writer ok");
+    isa_ok( $writer, "Mvalve::Writer", "writer class ok" );
+    ok( $reader, "reader ok");
+    isa_ok( $reader, "Mvalve::Reader", "reader class ok" );
 
     my $message = Mvalve::Message->new(
         headers => {
@@ -41,10 +48,11 @@ BEGIN
         content => "test"
     );
 
-    $mv->insert( message => $message );
+    $writer->insert( message => $message );
 
     {
-        my $rv = $mv->next();
+        my $rv = $reader->next();
         ok($rv);
+        is( $message->content, $rv->content, "content ok" );
     }
 }

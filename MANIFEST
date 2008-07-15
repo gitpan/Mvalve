@@ -11,15 +11,19 @@ inc/Module/Install/WriteAll.pm
 inc/Test/Compile.pm
 inc/Test/More.pm
 lib/Mvalve.pm
+lib/Mvalve/Const.pm
 lib/Mvalve/Message.pm
 lib/Mvalve/Queue.pm
 lib/Mvalve/Queue/Q4M.pm
 lib/Mvalve/QueueSet.pm
+lib/Mvalve/Reader.pm
 lib/Mvalve/State.pm
 lib/Mvalve/State/Memcached.pm
 lib/Mvalve/State/Memory.pm
 lib/Mvalve/Throttler.pm
 lib/Mvalve/Throttler/Data/Valve.pm
+lib/Mvalve/Types.pm
+lib/Mvalve/Writer.pm
 Makefile.PL
 MANIFEST			This list of files
 META.yml

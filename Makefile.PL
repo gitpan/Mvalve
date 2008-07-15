@@ -6,8 +6,9 @@ all_from('lib/Mvalve.pm');
 
 requires('Cache::Memcached');
 requires('Data::Serializer');
-requires('Data::Valve', '0.00003');
+requires('Data::Valve', '0.00005');
 requires('Digest::SHA1');
+requires('Exporter', '5.61');
 requires('HTTP::Headers');
 requires('Moose');
 requires('MooseX::ClassAttribute');

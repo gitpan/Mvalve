@@ -1,7 +1,10 @@
 Changes
 =======
 
-0.00007
+0.00008 - 15 Jul 2008
+  - Split Mvalve into Mvalve::Reader and Mvalve::Writer
+
+0.00007 - 14 Jul 2008
   - Change the nested constructor specification. Everything now must
     be eplicitly stated as { module => "...", args => { } }
   - Slightly refactor the coersion/default methods

@@ -19,11 +19,12 @@ no_index:
 requires:
   Cache::Memcached: 0
   Data::Serializer: 0
-  Data::Valve: 0.00003
+  Data::Valve: 0.00005
   Digest::SHA1: 0
+  Exporter: 5.61
   HTTP::Headers: 0
   Moose: 0
   MooseX::ClassAttribute: 0
   Queue::Q4M: 0.00009
   UNIVERSAL::require: 0
-version: 0.00007
+version: 0.00008
