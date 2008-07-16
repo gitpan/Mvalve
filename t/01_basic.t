@@ -9,8 +9,8 @@ BEGIN
         plan(tests => 8);
     }
 
-    use_ok( "Mvalve::Writer" );
     use_ok( "Mvalve::Reader" );
+    use_ok( "Mvalve::Writer" );
 }
 
 {
@@ -25,9 +25,9 @@ BEGIN
         }
     );
 
-    my $writer = Mvalve::Writer->new(queue => \%q_config);
     my $reader = Mvalve::Reader->new(
         queue => \%q_config,
+        state => { module => "Memory" },
         throttler => {
             args => {
                 max_items => 10,
@@ -35,6 +35,7 @@ BEGIN
             }
         },
     );
+    my $writer = Mvalve::Writer->new(queue => \%q_config);
 
     ok( $writer, "writer ok");
     isa_ok( $writer, "Mvalve::Writer", "writer class ok" );

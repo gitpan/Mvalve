@@ -10,7 +10,7 @@ extends 'Mvalve::Base';
 
 has 'timeout' => (
     is => 'rw',
-    isa => 'Int',
+    isa => 'Num',
     required => 1,
     default => 60
 );
@@ -46,10 +46,16 @@ sub next
     }
 
     Mvalve::trace( "issueing fetch on table '$table'") if &Mvalve::Const::MVALVE_TRACE;
+
     my $message = $self->q_fetch(table => $table);
     if (! $message) {
         Mvalve::trace( "q_fetch did not return a message, simply returning" ) if &Mvalve::Const::MVALVE_TRACE;
         return ();
+    }
+
+    if (&Mvalve::Const::MVALVE_TRACE && $table eq 'q_timed') {
+        Mvalve::trace( "we should have dispatched at " . 
+            scalar( localtime( $message->header( &Mvalve::Const::RETRY_HEADER )  /100_000 ) ) );
     }
 
     # destination is an abstract symbol representing the endpoint

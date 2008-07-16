@@ -1,7 +1,10 @@
-# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Base.pm 65775 2008-07-15T06:15:16.660072Z daisuke  $
+# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Base.pm 66265 2008-07-16T08:10:25.633278Z daisuke  $
 
 package Mvalve::Base;
 use Moose;
+use Mvalve;
+use Mvalve::QueueSet;
+use Time::HiRes;
 
 with 'MooseX::KeyedMutex';
 
@@ -26,8 +29,9 @@ has 'queue' => (
     };
 
     has 'queue_set' => (
-        is  => 'ro',
+        is  => 'rw',
         isa => 'Mvalve::QueueSet',
+        required => 1,
         default => $default->( 'Mvalve::QueueSet' )
     );
 
@@ -59,20 +63,23 @@ sub defer
 {
     my( $self, %args ) = @_;
 
-    my $message = $args{message};
-    my $interval = $args{interval} || 
+    my $message  = $args{message};
+    my $interval = $args{interval} || 0;
+    my $duration = $args{duration} ||
         $message->header( &Mvalve::Const::DURATION_HEADER ) ||
         0;
 
+    my $factor = 100_000;
+    $interval *= $factor;
+    $duration *= $factor;
 
     if ( ! blessed($message) || ! $message->isa( 'Mvalve::Message' ) ) {
         return () ;
     }
 
     my $qs          = $self->queue_set;
-    my $table       = $qs->choose_table('timed');
     my $destination = $message->header( &Mvalve::Const::DESTINATION_HEADER );
-    my $time_key    = [ $table, $destination, 'retry time' ];
+    my $time_key    = [ $destination, 'retry time' ];
     my $retry_key   = [ $destination, 'retry' ];
 
     my $done = 0;
@@ -83,20 +90,32 @@ sub defer
 
         $done = 1;
 
-        my $retry = $self->state_get($time_key);
-        my $next  = (time + $interval) * 1000;
+        my $now    = Time::HiRes::time() * $factor;
+        my $retry  = int($self->state_get($time_key) || $now);
 
-        if ( ! $retry || $retry < $next ) {
-            $retry = $next;
+        # we always prefer duration
+        my $offset = $duration || $interval;
+        my $myturn = 0;
+
+        if ($retry > $now) {
+            $myturn = $retry;
+        } else {
+            if ( $retry + $offset >= $now ) {
+                $myturn = $retry + $offset;
+            } else {
+                $myturn = $now;
+            }
         }
-        $message->header( &Mvalve::Const::RETRY_HEADER, $retry );
+        my $next   = $myturn + $offset;
 
-        Mvalve::trace( "defer to $table (retry = $retry)" ) if &Mvalve::Const::MVALVE_TRACE;
+        $message->header( &Mvalve::Const::RETRY_HEADER, $myturn );
+
+        Mvalve::trace( "defer (retry = $retry)" ) if &Mvalve::Const::MVALVE_TRACE;
         $rv = $self->q_insert( 
-            table => $table,
+            table => $qs->choose_table('timed'),
             data => {
                 destination => $destination,
-                ready       => $retry,
+                ready       => $myturn,
                 message     => $message->serialize,
             }
         );
@@ -104,8 +123,7 @@ sub defer
         Mvalve::trace( "q_insert results in $rv" ) if &Mvalve::Const::MVALVE_TRACE;
 
         if ($rv) {
-            $retry += $interval;
-            $self->state_set($time_key, $retry);
+            $self->state_set($time_key, $next);
         }
     }
 

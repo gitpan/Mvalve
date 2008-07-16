@@ -24,8 +24,10 @@ requires:
   Exporter: 5.61
   HTTP::Headers: 0
   Moose: 0
+  MooseX::App::Cmd: 0.03
   MooseX::ClassAttribute: 0
+  MooseX::ConfigFromFile: 0
   MooseX::KeyedMutex: 0
   Queue::Q4M: 0.00009
   UNIVERSAL::require: 0
-version: 0.00009
+version: 0.00010

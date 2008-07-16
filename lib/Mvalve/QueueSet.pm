@@ -2,6 +2,7 @@
 
 package Mvalve::QueueSet;
 use Moose;
+use Time::HiRes();
 
 has 'emergency_queues' => (
     is => 'rw',
@@ -74,7 +75,7 @@ sub choose_table {
 sub as_q4m_args
 {
     my $self = shift;
-    my $now = time() * 1000;
+    my $now = Time::HiRes::time() * 100000;
     my @list = (
         (map { $_->{table} } $self->emergency_queues),
         (map { "$_->{table}:ready<" . $now } $self->timed_queues),

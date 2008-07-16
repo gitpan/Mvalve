@@ -9,7 +9,7 @@ use Mvalve::Throttler;
 use Mvalve::Writer;
 use Time::HiRes();
 
-our $VERSION   = '0.00009';
+our $VERSION   = '0.00010';
 our $AUTHORITY = "cpan:DMAKI";
 
 sub trace { print STDERR "MVALVE: @_\n" }
@@ -135,18 +135,18 @@ enabled tables in your mysql database.
   CREATE TABLE q_emerg (
      destination VARCHAR(40) NOT NULL,
      message     BLOB NOT NULL
-  ) ENGINE=QUEUE DEFAULT CHARSET=utf8
+  ) ENGINE=QUEUE DEFAULT CHARSET=utf8;
  
   CREATE TABLE q_timed (
      destination VARCHAR(40) NOT NULL,
      ready       BIGINT NOT NULL,
      message     BLOB NOT NULL
-  ) ENGINE=QUEUE DEFAULT CHARSET=utf8
+  ) ENGINE=QUEUE DEFAULT CHARSET=utf8;
  
   CREATE TABLE q_incoming (
      destination VARCHAR(40) NOT NULL,
      message     BLOB NOT NULL
-  ) ENGINE=QUEUE DEFAULT CHARSET=utf8
+  ) ENGINE=QUEUE DEFAULT CHARSET=utf8;
 
 You also need to setup a memcached compatible distributed cache/storage.
 This will be used to share certain key data across multiple instances

@@ -9,7 +9,7 @@ BEGIN
     } elsif (! $ENV{MVALVE_Q4M_DSN} ) {
         plan(skip_all => "Define MVALVE_Q4M_DSN to run this test");
     } else {
-        plan(tests => 3);
+        plan(tests => 6);
     }
 
     $ENV{MEMCACHED_SERVERS} ||= '127.0.0.1:11211';
@@ -64,23 +64,49 @@ BEGIN
                 &Mvalve::Const::DESTINATION_HEADER => 'test',
             }
         ),
+        Mvalve::Message->new(
+            headers => {
+                &Mvalve::Const::DESTINATION_HEADER => 'test-timed',
+                &Mvalve::Const::DURATION_HEADER => 3,
+            }
+        ),
+        Mvalve::Message->new(
+            headers => {
+                &Mvalve::Const::DESTINATION_HEADER => 'test-timed',
+                &Mvalve::Const::DURATION_HEADER => 3,
+            }
+        ),
+        Mvalve::Message->new(
+            headers => {
+                &Mvalve::Const::DESTINATION_HEADER => 'test-timed',
+                &Mvalve::Const::DURATION_HEADER => 3,
+            }
+        ),
     );
 
-    my $start = time();
+    my $start = Time::HiRes::time();
     $writer->insert(message => $_) for @messages;
 
     my $count = 0;
-    while ( $count < 3 ) {
+    my $prev = $start;
+    while ( $count < @messages ) {
         my $rv = $reader->next;
         next unless $rv;
 
         $count++;
         my $dest = $rv->header(&Mvalve::Const::DESTINATION_HEADER);
-        next if $dest eq 'test';
+        next if $dest ne 'test-timed';
 
-        my $end = time();
+        my $end = Time::HiRes::time();
 
-        my $diff = $end - $start;
-        ok( $diff > 2.8, "waited for $diff to get a result" );
+        my $diff = $end - $prev;
+        $prev = $end;
+
+        # XXX - the first one usually falls short of our expectations
+        if ($count == 3) {
+            ok( $diff >= 2.8 && $diff <= 4.0, "waited for $diff to get a result" );
+        } else {
+            ok( $diff >= 2.8 && $diff <= 3.2, "waited for $diff to get a result" );
+        }
     }
 }
