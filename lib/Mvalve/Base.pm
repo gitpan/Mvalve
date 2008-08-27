@@ -1,12 +1,20 @@
-# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Base.pm 66265 2008-07-16T08:10:25.633278Z daisuke  $
+# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Base.pm 66319 2008-07-17T06:01:46.089278Z daisuke  $
 
 package Mvalve::Base;
 use Moose;
 use Mvalve;
 use Mvalve::QueueSet;
+use Mvalve::Logger;
+use Mvalve::Types;
 use Time::HiRes;
 
 with 'MooseX::KeyedMutex';
+
+has 'logger' => (
+    is       => 'rw',
+    does     => 'Mvalve::Logger',
+    coerce   => 1
+);
 
 has 'queue' => (
     is       => 'rw',
@@ -50,6 +58,14 @@ has 'queue' => (
 __PACKAGE__->meta->make_immutable;
 
 no Moose;
+
+sub log {
+    my $self = shift;
+    my $logger = $self->logger ;
+    return () unless $logger;
+
+    $logger->log(@_);
+}
 
 sub clear_all {
     my $self = shift;

@@ -1,4 +1,4 @@
-# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Writer.pm 65774 2008-07-15T06:12:55.841554Z daisuke  $
+# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Writer.pm 66313 2008-07-17T04:29:13.361349Z daisuke  $
 
 package Mvalve::Writer;
 use Moose;
@@ -22,6 +22,11 @@ sub insert {
     my %data = (
         destination => $message->header( &Mvalve::Const::DESTINATION_HEADER ),
         message => $message->serialize()
+    );
+
+    $self->log(
+        action      => "enqueue",
+        destination => $data{destination},
     );
 
     # Choose one of the queues, depending on the headers

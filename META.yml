@@ -6,11 +6,11 @@ build_requires:
   Test::Compile: 0
   Test::More: 0
 distribution_type: module
-generated_by: 'Module::Install version 0.75'
+generated_by: 'Module::Install version 0.77'
 license: perl
 meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.3.html
-  version: 1.3
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
 name: Mvalve
 no_index:
   directory:
@@ -28,6 +28,9 @@ requires:
   MooseX::ClassAttribute: 0
   MooseX::ConfigFromFile: 0
   MooseX::KeyedMutex: 0
+  MooseX::Q4MLog: 0
   Queue::Q4M: 0.00009
   UNIVERSAL::require: 0
-version: 0.00010
+resources:
+  license: http://dev.perl.org/licenses/
+version: 0.00011

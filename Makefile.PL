@@ -15,6 +15,7 @@ requires('MooseX::App::Cmd', '0.03');
 requires('MooseX::ClassAttribute');
 requires('MooseX::ConfigFromFile');
 requires('MooseX::KeyedMutex');
+requires('MooseX::Q4MLog');
 requires('Queue::Q4M', '0.00009');
 requires('UNIVERSAL::require');
 

@@ -20,7 +20,14 @@ has 'throttler' => (
     does     => 'Mvalve::Throttler',
     required => 1,
     coerce   => 1,
-    handles  => [ qw(try_push) ],
+    handles  => [ qw(try_push fill) ],
+);
+
+has 'drop_on_emergency' => (
+    is => 'rw',
+    isa => 'Bool',
+    required => 1,
+    default => 1,
 );
 
 __PACKAGE__->meta->make_immutable;
@@ -53,7 +60,9 @@ sub next
         return ();
     }
 
-    if (&Mvalve::Const::MVALVE_TRACE && $table eq 'q_timed') {
+    my $destination = $message->header( &Mvalve::Const::DESTINATION_HEADER );
+
+    if (&Mvalve::Const::MVALVE_TRACE && $qs->is_timed( $table )) {
         Mvalve::trace( "we should have dispatched at " . 
             scalar( localtime( $message->header( &Mvalve::Const::RETRY_HEADER )  /100_000 ) ) );
     }
@@ -61,18 +70,37 @@ sub next
     # destination is an abstract symbol representing the endpoint
     # service name. this /could/ be used by the queue consumer, but it
     # is *not* a
-    my $destination = $message->header( &Mvalve::Const::DESTINATION_HEADER );
 
-    if ( $qs->is_emergency( $table ) ||  $qs->is_timed( $table ) ) {
+    my $emerg_key = [ $destination, 'emergency' ];
+    if ( $qs->is_emergency( $table ) ) {
+        if ($self->drop_on_emergency) {
+            $self->fill( key => $destination ) 
+        }
+        else {
+            my $duration = $message->header(&Mvalve::Const::DURATION_HEADER)
+                || $self->throttler->interval;
+            $self->state_set($emerg_key, time + $duration);
+        }
+
+        goto RETURN_MESSAGE;
+    }
+
+    my $avail_time = $self->state_get($emerg_key);
+    if ($avail_time && time < $avail_time) {
+        return (); # drop message!
+    }
+
+    if ( $qs->is_timed( $table ) ) {
         # if this is from an emergency queue or a timed queue, we go ahead
         # and allow the message, but we also update the throttler's count
         # so the next message from a normal queue would be throttled correctly
         if ($message->header(&Mvalve::Const::RETRY_HEADER)) {
             $self->state_decr( [ $destination, 'retry' ] );
         }
-        $self->try_push( key => $destination );
+        $self->fill( key => $destination );
 
-        return $message;
+        # XXX - This is bad practive, but oh well
+        goto RETURN_MESSAGE;
     }
 
     # otherwise, we need to check if this message is going to be throttled
@@ -86,11 +114,20 @@ sub next
             message => $message,
             interval => $self->throttler->interval,
         );
+        $self->log(
+            action => "throttle",
+            destination => $destination
+        );
         return (); # no data for you!
     }
 
+RETURN_MESSAGE:
     # if we got here, we can just return the data
     Mvalve::trace( "message", $message->id, "being returned") if &Mvalve::Const::MVALVE_TRACE;
+    $self->log(
+        action => "dequeue",
+        destination => $destination,
+    );
     return $message;
 }
 
@@ -132,6 +169,13 @@ determining if a message needs to be throttled or not
 =head2 timeout
 
 C<timeout> specifies the timeout value while we wait to read from the queue.
+
+=head2 drop_on_emergency
+
+C<drop_on_emergency> specifies if given a emergency message, other messages
+should be dropped while the emergency message is being displayed.
+
+By default this is C<true>.
 
 =cut
 

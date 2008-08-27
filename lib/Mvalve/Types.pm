@@ -5,6 +5,7 @@ use Moose::Util::TypeConstraints;
 role_type 'Mvalve::Queue';
 role_type 'Mvalve::State';
 role_type 'Mvalve::Throttler';
+role_type 'Mvalve::Logger';
 
 my $coerce = sub {
     my $default_class = shift;
@@ -19,9 +20,12 @@ my $coerce = sub {
         $module->new(%{$h->{args}});
     };
 };
+
 *__coerce_throttler = $coerce->('Data::Valve', 'Mvalve::Throttler');
 *__coerce_queue     = $coerce->('Q4M', 'Mvalve::Queue');
 *__coerce_state     = $coerce->('Memory', 'Mvalve::State');
+*__coerce_logger    = $coerce->('Stats', 'Mvalve::Logger');
+
 coerce 'Mvalve::Throttler'
     => from 'HashRef'
     => \&__coerce_throttler
@@ -35,6 +39,11 @@ coerce 'Mvalve::Queue'
 coerce 'Mvalve::State'
     => from 'HashRef'
     => \&__coerce_state
+;
+
+coerce 'Mvalve::Logger'
+    => from 'HashRef'
+    => \&__coerce_logger
 ;
 
 no Moose;

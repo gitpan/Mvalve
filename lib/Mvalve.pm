@@ -9,7 +9,7 @@ use Mvalve::Throttler;
 use Mvalve::Writer;
 use Time::HiRes();
 
-our $VERSION   = '0.00010';
+our $VERSION   = '0.00011';
 our $AUTHORITY = "cpan:DMAKI";
 
 sub trace { print STDERR "MVALVE: @_\n" }
@@ -146,6 +146,12 @@ enabled tables in your mysql database.
   CREATE TABLE q_incoming (
      destination VARCHAR(40) NOT NULL,
      message     BLOB NOT NULL
+  ) ENGINE=QUEUE DEFAULT CHARSET=utf8;
+
+  CREATE TABLE q_statslog (
+     action      VARCHAR(40) NOT NULL,
+     destination VARCHAR(40) NOT NULL,
+     logged_on   TIMESTAMP NOT NULL
   ) ENGINE=QUEUE DEFAULT CHARSET=utf8;
 
 You also need to setup a memcached compatible distributed cache/storage.

@@ -1,6 +1,14 @@
 Changes
 =======
 
+0.00011 - 27 Aug 2008
+  - When emergency messages are sent, messages on other queues are DROPPED.
+    the 'X-Mvalve-Duration' header is used to determine the amount of time
+    to drop messages for (33rpm)
+  - Properly handle fill() (33rpm)
+  - Add logging for throttling (daisuke)
+  - Fix "mvalve create" table name, also create statslog
+
 0.00010 - 16 Jul 2008
   - Correct how timed queue works (hopefully)
   - Add a simple mvalve command. Currently just creates the required queues.

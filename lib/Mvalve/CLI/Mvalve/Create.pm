@@ -40,10 +40,18 @@ sub run {
         EOSQL
 
         $dbh->do(<<"        EOSQL");
-            CREATE TABLE q_emerg (
+            CREATE TABLE q_timed (
                 destination VARCHAR(40) NOT NULL,
                 ready       BIGINT NOT NULL,
                 message     BLOB NOT NULL
+            ) ENGINE=QUEUE DEFAULT CHARSET=utf8;
+        EOSQL
+
+        $dbh->do(<<"        EOSQL");
+            CREATE TABLE q_statslog (
+                action      VARCHAR(40) NOT NULL,
+                destination VARCHAR(40) NOT NULL,
+                logged_on   TIMESTAMP NOT NULL
             ) ENGINE=QUEUE DEFAULT CHARSET=utf8;
         EOSQL
 
