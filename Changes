@@ -1,6 +1,9 @@
 Changes
 =======
 
+0.00012 - 27 Aug 2008
+  - Forgot to add a few modules to MANIFEST. Repackaging.
+
 0.00011 - 27 Aug 2008
   - When emergency messages are sent, messages on other queues are DROPPED.
     the 'X-Mvalve-Duration' header is used to determine the amount of time

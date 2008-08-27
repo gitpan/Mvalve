@@ -16,6 +16,8 @@ lib/Mvalve/CLI/ConfigFromFile.pm
 lib/Mvalve/CLI/Mvalve.pm
 lib/Mvalve/CLI/Mvalve/Create.pm
 lib/Mvalve/Const.pm
+lib/Mvalve/Logger.pm
+lib/Mvalve/Logger/Stats.pm
 lib/Mvalve/Message.pm
 lib/Mvalve/Queue.pm
 lib/Mvalve/Queue/Q4M.pm
@@ -37,5 +39,6 @@ t/01_basic.t
 t/02_queue_set.t
 t/03_extended.t
 t/04_timed.t
+t/05_log.t
 t/99-pod-coverage.t
 t/99-pod.t
