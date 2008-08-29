@@ -18,8 +18,10 @@ no_index:
     - t
 requires:
   Cache::Memcached: 0
+  Config::Any: 0
+  DBI: 0
   Data::Serializer: 0
-  Data::Valve: 0.00005
+  Data::Valve: 0.00007
   Digest::SHA1: 0
   Exporter: 5.61
   HTTP::Headers: 0
@@ -30,7 +32,9 @@ requires:
   MooseX::KeyedMutex: 0
   MooseX::Q4MLog: 0
   Queue::Q4M: 0.00009
+  Sys::Hostname: 0
+  Time::HiRes: 0
   UNIVERSAL::require: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.00012
+version: 0.00013

@@ -74,12 +74,12 @@ sub next
     my $emerg_key = [ $destination, 'emergency' ];
     if ( $qs->is_emergency( $table ) ) {
         if ($self->drop_on_emergency) {
-            $self->fill( key => $destination ) 
-        }
-        else {
             my $duration = $message->header(&Mvalve::Const::DURATION_HEADER)
                 || $self->throttler->interval;
             $self->state_set($emerg_key, time + $duration);
+        }
+        else {
+            $self->fill( key => $destination ) 
         }
 
         goto RETURN_MESSAGE;

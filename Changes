@@ -1,6 +1,9 @@
 Changes
 =======
 
+0.00013 - 29 Aug 2008
+  - Add missing requirements to Makefile.PL
+
 0.00012 - 27 Aug 2008
   - Forgot to add a few modules to MANIFEST. Repackaging.
 
