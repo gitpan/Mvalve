@@ -1,4 +1,6 @@
 Changes
+config.yaml
+eg/simple.pl
 inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
@@ -8,8 +10,8 @@ inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
 inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
-inc/Test/Compile.pm
 inc/Test/More.pm
+inc/Test/UseAllModules.pm
 lib/Mvalve.pm
 lib/Mvalve/Base.pm
 lib/Mvalve/CLI/ConfigFromFile.pm

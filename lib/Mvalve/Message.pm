@@ -50,7 +50,7 @@ has 'content' => (
 class_has 'SERIALIZER' => (
     is => 'rw',
     isa => 'Data::Serializer',
-    required => 1,
+    lazy => 1,
     default => sub {
         Data::Serializer->new(
             serializer => 'Storable',
@@ -66,13 +66,13 @@ no MooseX::ClassAttribute;
 
 sub serialize { 
     my $rv = eval { $_[0]->SERIALIZER->serialize($_[0]) };
-    confess "Failed to serialize @_: $@" if $@;
+    Carp::confess("Failed to serialize @_: $@") if $@;
     return $rv;
 }
     
 sub deserialize { 
     my $rv = eval { shift->SERIALIZER->deserialize(@_) };
-    confess "Failed to deserialize @_: $@" if $@;
+    Carp::confess("Failed to deserialize @_: $@") if $@;
     return $rv;
 }
 

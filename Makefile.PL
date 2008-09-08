@@ -24,7 +24,7 @@ requires('Time::HiRes');
 requires('UNIVERSAL::require');
 
 test_requires('Test::More');
-test_requires('Test::Compile');
+test_requires('Test::UseAllModules');
 
 install_script('script/mvalve');
 

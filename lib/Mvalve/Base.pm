@@ -1,4 +1,4 @@
-# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Base.pm 66319 2008-07-17T06:01:46.089278Z daisuke  $
+# $Id: /mirror/coderepos/lang/perl/Mvalve/trunk/lib/Mvalve/Base.pm 72443 2008-09-08T14:21:42.664054Z daisuke  $
 
 package Mvalve::Base;
 use Moose;
@@ -7,6 +7,7 @@ use Mvalve::QueueSet;
 use Mvalve::Logger;
 use Mvalve::Types;
 use Time::HiRes;
+use Scalar::Util ();
 
 with 'MooseX::KeyedMutex';
 
@@ -89,7 +90,7 @@ sub defer
     $interval *= $factor;
     $duration *= $factor;
 
-    if ( ! blessed($message) || ! $message->isa( 'Mvalve::Message' ) ) {
+    if ( ! Scalar::Util::blessed($message) || ! $message->isa( 'Mvalve::Message' ) ) {
         return () ;
     }
 

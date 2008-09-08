@@ -3,8 +3,8 @@ abstract: 'Generic Q4M Powered Message Pipe'
 author:
   - 'Daisuke Maki C<< <daisuke@endeworks.jp> >>'
 build_requires:
-  Test::Compile: 0
   Test::More: 0
+  Test::UseAllModules: 0
 distribution_type: module
 generated_by: 'Module::Install version 0.77'
 license: perl
@@ -37,4 +37,4 @@ requires:
   UNIVERSAL::require: 0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.00013
+version: 0.00014

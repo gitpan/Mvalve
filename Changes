@@ -1,6 +1,12 @@
 Changes
 =======
 
+0.00014 - 08 Sep 2008
+  - Recent versions of Moose (properly) unimport blessed() and confess(), 
+    which breaks my code depending on it.
+  - Recent versions of MooseX::ClassAttribute (properly) makes class
+    attributes /not/ able to be required, which breaks my code depending on it.
+
 0.00013 - 29 Aug 2008
   - Add missing requirements to Makefile.PL
 

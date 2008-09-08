@@ -9,7 +9,7 @@ use Mvalve::Throttler;
 use Mvalve::Writer;
 use Time::HiRes();
 
-our $VERSION   = '0.00013';
+our $VERSION   = '0.00014';
 our $AUTHORITY = "cpan:DMAKI";
 
 sub trace { print STDERR "MVALVE: @_\n" }
